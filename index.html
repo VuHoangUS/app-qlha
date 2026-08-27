@@ -7,44 +7,69 @@
   <meta name="description" content="Phần mềm Quản lý hình ảnh vết thương / phẫu thuật - Khoa Ngoại Chấn thương Chỉnh hình, Bệnh viện Thống Nhất">
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      overflow: hidden;              /* không cho trang bọc tự cuộn, app bên trong tự lo phần cuộn */
+      margin: 0; padding: 0; height: 100%;
+      overflow: hidden;
       background: #f2f5f7;
+      color: #263238;
       font-family: 'Segoe UI', Roboto, Arial, sans-serif;
     }
-    #appFrame {
-      display: block;
-      width: 100%;
-      height: 100%;
-      border: 0;
-    }
-    /* Màn hình chờ trong lúc app bên trong đang tải */
+    #appFrame { display: block; width: 100%; height: 100%; border: 0; }
+
+    /* ---------- Màn hình chờ ---------- */
     #loadingScreen {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      background: #f2f5f7;
-      color: #78909C;
-      font-size: 14px;
-      z-index: 10;
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+      background: #f2f5f7; color: #78909C; font-size: 14px;
       transition: opacity .3s ease;
     }
     #loadingScreen.hidden { opacity: 0; pointer-events: none; }
     .spinner {
-      width: 34px;
-      height: 34px;
-      border: 4px solid #d9d9d9;
-      border-top-color: #027bff;
-      border-radius: 50%;
+      width: 34px; height: 34px;
+      border: 4px solid #d9d9d9; border-top-color: #027bff; border-radius: 50%;
       animation: spin .8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---------- Màn hình hướng dẫn khi mở trong Messenger/Zalo ---------- */
+    #inAppScreen {
+      position: fixed; inset: 0; z-index: 20;
+      display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      padding: 28px 24px; text-align: center;
+      background: #f2f5f7;
+      overflow-y: auto;
+    }
+    #inAppScreen.show { display: flex; }
+    .ia-card {
+      background: #fff; border: 1px solid #e0e0e0; border-radius: 14px;
+      padding: 26px 22px; max-width: 420px; width: 100%;
+      box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    }
+    .ia-icon { font-size: 40px; margin-bottom: 10px; }
+    .ia-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+    .ia-text { font-size: 14.5px; line-height: 1.6; color: #546E7A; margin-bottom: 6px; }
+    .ia-steps {
+      text-align: left; font-size: 14.5px; line-height: 1.7; color: #37474F;
+      background: #f7f9fa; border-radius: 10px; padding: 14px 16px 14px 32px;
+      margin: 16px 0 18px;
+    }
+    .ia-btn {
+      display: block; width: 100%; box-sizing: border-box;
+      padding: 13px 18px; margin-top: 10px;
+      border: none; border-radius: 10px;
+      background: #027bff; color: #fff;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      font-family: inherit;
+    }
+    .ia-btn.secondary { background: #eceff1; color: #263238; }
+    .ia-note { font-size: 12.5px; color: #90A4AE; margin-top: 14px; line-height: 1.5; }
+    #copyToast {
+      position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(16px);
+      background: #323232; color: #fff; padding: 11px 18px; border-radius: 8px;
+      font-size: 14px; opacity: 0; pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease; z-index: 30;
+    }
+    #copyToast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
 </head>
 <body>
@@ -53,6 +78,27 @@
     <div class="spinner"></div>
     <div>Đang tải phần mềm…</div>
   </div>
+
+  <!-- Hiện ra khi phát hiện đang mở trong Messenger / Zalo / Facebook... -->
+  <div id="inAppScreen">
+    <div class="ia-card">
+      <div class="ia-icon">🌐</div>
+      <div class="ia-title">Vui lòng mở bằng trình duyệt</div>
+      <p class="ia-text">
+        Phần mềm cần đăng nhập tài khoản Google, nhưng trình duyệt bên trong
+        Messenger / Zalo không hỗ trợ việc này nên sẽ báo lỗi.
+      </p>
+      <div class="ia-steps" id="iaSteps"></div>
+      <button class="ia-btn" id="openBrowserBtn">Mở bằng trình duyệt</button>
+      <button class="ia-btn secondary" id="copyLinkBtn">Sao chép đường liên kết</button>
+      <p class="ia-note">
+        Mẹo: sau khi mở được trong Chrome hoặc Safari, hãy lưu trang này vào màn hình chính
+        để lần sau vào thẳng, không phải qua bước này nữa.
+      </p>
+    </div>
+  </div>
+
+  <div id="copyToast">Đã sao chép đường liên kết</div>
 
   <!--
     ======================= QUAN TRỌNG =======================
@@ -68,14 +114,90 @@
     title="Phần mềm Quản lý hình ảnh vết thương / phẫu thuật"></iframe>
 
   <script>
-    // Ẩn màn hình chờ khi app bên trong đã tải xong
-    document.getElementById('appFrame').addEventListener('load', function () {
-      document.getElementById('loadingScreen').classList.add('hidden');
-    });
-    // Phòng trường hợp sự kiện load không kích hoạt: sau 12 giây thì ẩn màn hình chờ
-    setTimeout(function () {
-      document.getElementById('loadingScreen').classList.add('hidden');
-    }, 12000);
+    (function () {
+      var ua = navigator.userAgent || '';
+
+      // Nhận biết trình duyệt tích hợp trong ứng dụng (Messenger, Facebook, Zalo, Instagram, Line, TikTok...).
+      // Những trình duyệt này chặn cookie bên thứ ba nên không đăng nhập Google được -> app sẽ báo lỗi 401.
+      var isInAppBrowser =
+        /FBAN|FBAV|FB_IAB|FBIOS|Messenger/i.test(ua) ||   // Facebook / Messenger
+        /Zalo/i.test(ua) ||                                // Zalo
+        /Instagram|Line\/|MicroMessenger|TikTok/i.test(ua);// Instagram, Line, WeChat, TikTok
+
+      var isAndroid = /Android/i.test(ua);
+      var isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+      if (isInAppBrowser) {
+        // Không tải app trong iframe nữa (sẽ chỉ ra trang lỗi của Google), hiện hướng dẫn thay thế
+        var frame = document.getElementById('appFrame');
+        frame.removeAttribute('src');
+        frame.style.display = 'none';
+        document.getElementById('loadingScreen').classList.add('hidden');
+        document.getElementById('inAppScreen').classList.add('show');
+
+        // Hướng dẫn theo từng hệ điều hành
+        var steps = document.getElementById('iaSteps');
+        if (isIOS) {
+          steps.innerHTML =
+            '1. Bấm dấu <b>•••</b> ở góc trên bên phải<br>' +
+            '2. Chọn <b>Mở trong Safari</b> (hoặc Mở bằng trình duyệt)';
+        } else if (isAndroid) {
+          steps.innerHTML =
+            '1. Bấm dấu <b>⋮</b> ở góc trên bên phải<br>' +
+            '2. Chọn <b>Mở bằng trình duyệt</b> (hoặc Mở trong Chrome)';
+        } else {
+          steps.innerHTML = 'Mở menu của ứng dụng rồi chọn <b>Mở bằng trình duyệt</b>.';
+        }
+
+        var pageUrl = location.href;
+
+        // Android cho phép ép mở bằng Chrome qua liên kết dạng intent://
+        document.getElementById('openBrowserBtn').onclick = function () {
+          if (isAndroid) {
+            location.href = 'intent://' + location.host + location.pathname +
+              '#Intent;scheme=https;package=com.android.chrome;end';
+          } else {
+            // iOS không cho ép chuyển trình duyệt -> sao chép liên kết để người dùng tự dán
+            copyLink();
+            alert('iOS không cho phép tự chuyển trình duyệt.\n\nĐã sao chép đường liên kết — bạn hãy mở Safari rồi dán vào, hoặc bấm dấu ••• ở góc trên bên phải và chọn "Mở trong Safari".');
+          }
+        };
+
+        document.getElementById('copyLinkBtn').onclick = copyLink;
+
+        function copyLink() {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(pageUrl).then(showToast, fallbackCopy);
+          } else {
+            fallbackCopy();
+          }
+        }
+        function fallbackCopy() {
+          var ta = document.createElement('textarea');
+          ta.value = pageUrl;
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.focus(); ta.select();
+          try { document.execCommand('copy'); showToast(); } catch (e) {}
+          document.body.removeChild(ta);
+        }
+        function showToast() {
+          var t = document.getElementById('copyToast');
+          t.classList.add('show');
+          setTimeout(function () { t.classList.remove('show'); }, 2000);
+        }
+        return; // dừng tại đây, không chạy phần tải iframe bên dưới
+      }
+
+      // ----- Trình duyệt bình thường: tải app trong iframe như cũ -----
+      document.getElementById('appFrame').addEventListener('load', function () {
+        document.getElementById('loadingScreen').classList.add('hidden');
+      });
+      setTimeout(function () {
+        document.getElementById('loadingScreen').classList.add('hidden');
+      }, 12000);
+    })();
   </script>
 
 </body>
