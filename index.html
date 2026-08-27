@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phần mềm Quản lý hình ảnh vết thương / phẫu thuật</title>
+  <meta name="description" content="Phần mềm Quản lý hình ảnh vết thương / phẫu thuật - Khoa Ngoại Chấn thương Chỉnh hình, Bệnh viện Thống Nhất">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;              /* không cho trang bọc tự cuộn, app bên trong tự lo phần cuộn */
+      background: #f2f5f7;
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    }
+    #appFrame {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+    /* Màn hình chờ trong lúc app bên trong đang tải */
+    #loadingScreen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: #f2f5f7;
+      color: #78909C;
+      font-size: 14px;
+      z-index: 10;
+      transition: opacity .3s ease;
+    }
+    #loadingScreen.hidden { opacity: 0; pointer-events: none; }
+    .spinner {
+      width: 34px;
+      height: 34px;
+      border: 4px solid #d9d9d9;
+      border-top-color: #027bff;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div id="loadingScreen">
+    <div class="spinner"></div>
+    <div>Đang tải phần mềm…</div>
+  </div>
+
+  <!--
+    ======================= QUAN TRỌNG =======================
+    Thay đường dẫn trong src bên dưới bằng URL Web App của bạn (đường dẫn kết thúc bằng /exec).
+    Lấy URL này trong Apps Script: Deploy > Manage deployments > sao chép "Web app URL".
+    ==========================================================
+  -->
+  <iframe
+    id="appFrame"
+    src="https://script.google.com/macros/s/AKfycbylk08XohV74yrX93Vtfsk8Gm0H2fg0mk6eZfDgxV2wrnHm73SjUdZeWi3B23BB4jgqLw/exec"
+    allow="camera; clipboard-write; fullscreen"
+    referrerpolicy="no-referrer-when-downgrade"
+    title="Phần mềm Quản lý hình ảnh vết thương / phẫu thuật"></iframe>
+
+  <script>
+    // Ẩn màn hình chờ khi app bên trong đã tải xong
+    document.getElementById('appFrame').addEventListener('load', function () {
+      document.getElementById('loadingScreen').classList.add('hidden');
+    });
+    // Phòng trường hợp sự kiện load không kích hoạt: sau 12 giây thì ẩn màn hình chờ
+    setTimeout(function () {
+      document.getElementById('loadingScreen').classList.add('hidden');
+    }, 12000);
+  </script>
+
+</body>
+</html>
