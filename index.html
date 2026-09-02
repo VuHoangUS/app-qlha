@@ -25,12 +25,22 @@
       transition: opacity .3s ease;
     }
     #loadingScreen.hidden { opacity: 0; pointer-events: none; }
-    .spinner {
-      width: 34px; height: 34px;
-      border: 4px solid #d9d9d9; border-top-color: #027bff; border-radius: 50%;
-      animation: spin .8s linear infinite;
+    /* "Bar loading": 3 vạch xanh nhấp nhô, đồng bộ với hiệu ứng loading dùng trong app (xem
+       .bar-loading trong Index.html của app chính) thay cho vòng xoay tròn cũ. */
+    .bar-loading { display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .bar-loading span {
+      width: 5px; height: 22px;
+      background: #027bff;
+      border-radius: 3px;
+      animation: barLoadingBounce 1s ease-in-out infinite;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .bar-loading span:nth-child(1) { animation-delay: -.32s; }
+    .bar-loading span:nth-child(2) { animation-delay: -.16s; }
+    .bar-loading span:nth-child(3) { animation-delay: 0s; }
+    @keyframes barLoadingBounce {
+      0%, 80%, 100% { transform: scaleY(.35); }
+      40% { transform: scaleY(1); }
+    }
 
     /* ---------- Màn hình hướng dẫn khi mở trong Messenger/Zalo ---------- */
     #inAppScreen {
@@ -77,7 +87,7 @@
 <body>
 
   <div id="loadingScreen">
-    <div class="spinner"></div>
+    <div class="bar-loading"><span></span><span></span><span></span></div>
     <div>Đang tải phần mềm…</div>
   </div>
 
